@@ -21,6 +21,7 @@ const listenABtn = document.getElementById("listenABtn");
 const listenBBtn = document.getElementById("listenBBtn");
 const guessALouderBtn = document.getElementById("guessALouderBtn");
 const guessBLouderBtn = document.getElementById("guessBLouderBtn");
+const cancelTestBtn = document.getElementById("cancelTestBtn");
 const trialStatus = document.getElementById("trialStatus");
 
 const resultBody = document.getElementById("resultBody");
@@ -59,7 +60,8 @@ const state = {
   startedAtCtxTime: 0,
   startedAtOffset: 0,
   pausedOffset: 0,
-  rafId: null
+  rafId: null,
+  pendingNextTrialTimer: null
 };
 
 function dbToLinearGain(db) {
@@ -116,6 +118,13 @@ function stopCurrentPlayback() {
   if (state.rafId) {
     cancelAnimationFrame(state.rafId);
     state.rafId = null;
+  }
+}
+
+function clearPendingTrialTimer() {
+  if (state.pendingNextTrialTimer) {
+    clearTimeout(state.pendingNextTrialTimer);
+    state.pendingNextTrialTimer = null;
   }
 }
 
@@ -303,9 +312,37 @@ function chooseLouderGuess(aLouderGuess) {
 
   trialStatus.textContent = correct ? "Correct. Moving to next trial..." : "Incorrect. Moving to next trial...";
 
-  setTimeout(() => {
+  clearPendingTrialTimer();
+  state.pendingNextTrialTimer = setTimeout(() => {
+    state.pendingNextTrialTimer = null;
+    if (!state.running) {
+      return;
+    }
     nextTrial();
   }, 450);
+}
+
+function cancelTest() {
+  if (!state.running) {
+    return;
+  }
+
+  clearPendingTrialTimer();
+  state.running = false;
+  stopPlaybackWithFadeOut();
+  state.currentTrial = 0;
+  state.totalTrials = 0;
+  state.loudIsA = [];
+  state.guessesALouder = [];
+  state.pausedOffset = 0;
+  seekBar.value = "0";
+  updateTimelineText(0);
+
+  testCard.classList.add("hidden");
+  resultCard.classList.add("hidden");
+  setupCard.classList.remove("hidden");
+  setupStatus.textContent = "Test cancelled. You can adjust settings and start again.";
+  startBtn.disabled = false;
 }
 
 function combinations(n, k) {
@@ -485,6 +522,8 @@ restartBtn.addEventListener("click", () => {
   setupStatus.textContent = "Adjust settings and start again.";
   validateInputs();
 });
+
+cancelTestBtn.addEventListener("click", cancelTest);
 
 validateInputs();
 updateTimelineText(0);

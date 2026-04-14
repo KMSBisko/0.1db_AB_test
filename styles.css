@@ -154,6 +154,14 @@ button:disabled {
   background: #1e293b;
 }
 
+.cancelBtn {
+  background: #b91c1c;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: #991b1b;
+}
+
 .status {
   margin: 0.25rem 0 0;
   color: var(--muted);
